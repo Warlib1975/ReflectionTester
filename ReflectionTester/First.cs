@@ -21,7 +21,7 @@ namespace ReflectionTester
 
         public event TestDelegate OnTestDelegate;
 
-        private string Method1(string a, int b)
+        private string Method1(string a, ref int b)
         {
             this.first_b = b;
             Console.WriteLine("Method1(a = " + a + ", b = " + b.ToString() + ") is executed with the result: " + a);
@@ -30,6 +30,23 @@ namespace ReflectionTester
             {
                 OnTestDelegate(a, b);
             }
+
+            b = b + 10;
+
+            return a;
+        }
+
+        protected string Method2(string a, ref int b)
+        {
+            this.first_b = b;
+            Console.WriteLine("Method1(a = " + a + ", b = " + b.ToString() + ") is executed with the result: " + a);
+
+            if (OnTestDelegate != null)
+            {
+                OnTestDelegate(a, b);
+            }
+
+            b = b + 10;
 
             return a;
         }
@@ -40,7 +57,7 @@ namespace ReflectionTester
         private int second_c = 16101975;
         protected int second_d = 1975;
 
-        private int First_C
+        private int Second_C
         {
             get { return second_c; }
             set { second_c = value; }

@@ -196,13 +196,17 @@ namespace ReflectionTester
         public static MethodInfo[] GetListOfMethods(object obj, BindingFlags flags = BindingFlags.Default, bool BaseType = false)
         {
             Type type = obj.GetType();
-            flags = Flags | flags;
-
             if (BaseType)
             {
                 type = type.BaseType; // BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);//  BindingFlags.GetField | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
             }
+            return GetListOfMethods(type, flags);
+        }
 
+        public static MethodInfo[] GetListOfMethods(Type type, BindingFlags flags = BindingFlags.Default)
+        {
+          
+            flags = Flags | flags;
             // get all public static methods of MyClass type
             MethodInfo[] methodInfos = type.GetMethods(flags);
             sb.AppendLine("List of private Methods of the class [" + type.Name + "]:");
@@ -286,7 +290,15 @@ namespace ReflectionTester
             if (m != null)
             {
                 object result = m.Invoke(obj, arguments);
-                sb.AppendLine("The method has returned: " + result.ToString());
+
+                args = string.Empty;
+
+                foreach (object arg in arguments)
+                {
+                    args += arg.ToString() + ", ";
+                }
+                args = args.Trim().TrimEnd(',');
+                sb.AppendLine("The method has returned: " + result.ToString() + " Arguments: " + args);
             }
             else
             {
@@ -324,26 +336,37 @@ namespace ReflectionTester
             }
         }
 
-        public static void UnSubscribeEvent(object obj, Control control, string EventName, MethodInfo method)
+        public static void UnSubscribeEvent(object obj, Control control, Type typeHandler, string EventName, MethodInfo method)
         {
             if (typeof(Control).IsAssignableFrom(control.GetType()))
             {
-                UnSubscribeEvent(obj, control.GetType(), EventName, method);
+                UnSubscribeEvent(obj, control.GetType(), typeHandler, EventName, method);
             }
         }
 
-        public static void UnSubscribeEvent(object obj, Type control, string EventName, MethodInfo method)
+        public static void UnSubscribeEvent(object obj, Type control, Type typeHandler, string EventName, MethodInfo method, bool IsConsole = false)
         {
             if (obj != null)
             {
                 EventInfo eventInfo = control.GetEvent(EventName);
 
-                Type type = typeof(EventHandler);
-                Delegate handler = Delegate.CreateDelegate(type, obj, method);
+                //Type type = typeof(EventHandler);
+                if (IsConsole)
+                {
+                    Delegate handler = Delegate.CreateDelegate(typeHandler, null, method);
+                    // detach the event handler
+                    if (handler != null)
+                        eventInfo.RemoveEventHandler(obj, handler);
+                }
+                else
+                {
+                    Delegate handler = Delegate.CreateDelegate(typeHandler, obj, method);
+                    // detach the event handler
+                    if (handler != null)
+                        eventInfo.RemoveEventHandler(control, handler);
+                }
 
-                // detach the event handler
-                if (handler != null)
-                    eventInfo.RemoveEventHandler(control, handler);
+
             }
         }
     }
