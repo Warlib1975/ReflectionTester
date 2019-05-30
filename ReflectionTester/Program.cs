@@ -4,9 +4,18 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace ReflectionTester
 {
+    public class MyClass : Second
+    {
+        private void First_OnTestDelegateReflection(string a, int b)
+        {
+            Console.WriteLine("\r\nEvent OnTestDelegateReflection has fired. Result a: " + a + ", result b: " + b.ToString());
+        }
+    }
+
     class Program
     {
         public static BindingFlags Flags = BindingFlags.Instance
@@ -35,6 +44,7 @@ namespace ReflectionTester
             TestReflection(second, BindingFlags.DeclaredOnly, true);
 
             Console.ReadLine();
+
         }
 
         public static void TestReflection(object obj, BindingFlags flags, bool BaseType = false)
@@ -62,6 +72,17 @@ namespace ReflectionTester
             ExecMethod(obj, "Method1", new object[] { "1016", 1675 }, flags, BaseType);
             Console.WriteLine(sb.ToString());
             sb.Clear();
+
+            Type type = typeof(Program);
+            MethodInfo method = type.GetMethod("First_OnTestDelegateReflection", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            if (method != null)
+            {
+                SubscribeEvent(obj, obj.GetType(), typeof(TestDelegate), "OnTestDelegate", method, true);
+            }
+            else
+            {
+                MessageBox.Show("Couldn't find method \"btnClose_OnClick\".");
+            }
         }
 
         private static void First_OnTestDelegate(string a, int b)
@@ -270,6 +291,59 @@ namespace ReflectionTester
             else
             {
                 sb.AppendLine("Couldn't found the method [" + MethodName + "]");
+            }
+        }
+
+        public static void SubscribeEvent(object obj, Type control, Type typeHandler, string EventName, MethodInfo method, bool IsConsole = false)
+        {
+            sb.AppendLine("Subscribe event [" + EventName + "] to the method [" + method.Name + "] using the delegate [" + typeHandler.Name + "].");
+
+            EventInfo eventInfo = control.GetEvent(EventName); //"Load"
+
+            // Create the delegate on the test class because that's where the
+            // method is. This corresponds with `new EventHandler(test.WriteTrace)`.
+            //Type type = typeof(EventHandler);
+            Delegate handler;
+            if (IsConsole)
+            {
+                handler = Delegate.CreateDelegate(typeHandler, null, method);
+                eventInfo.AddEventHandler(obj, handler);
+            }
+            else
+            {
+                handler = Delegate.CreateDelegate(typeHandler, obj, method);
+                eventInfo.AddEventHandler(control, handler);
+            }
+        }
+
+        public static void SubscribeEvent(object obj, Control control, Type typeHandler, string EventName, MethodInfo method)
+        {
+            if (typeof(Control).IsAssignableFrom(control.GetType()))
+            {
+                SubscribeEvent(obj, control.GetType(), typeHandler, EventName, method);
+            }
+        }
+
+        public static void UnSubscribeEvent(object obj, Control control, string EventName, MethodInfo method)
+        {
+            if (typeof(Control).IsAssignableFrom(control.GetType()))
+            {
+                UnSubscribeEvent(obj, control.GetType(), EventName, method);
+            }
+        }
+
+        public static void UnSubscribeEvent(object obj, Type control, string EventName, MethodInfo method)
+        {
+            if (obj != null)
+            {
+                EventInfo eventInfo = control.GetEvent(EventName);
+
+                Type type = typeof(EventHandler);
+                Delegate handler = Delegate.CreateDelegate(type, obj, method);
+
+                // detach the event handler
+                if (handler != null)
+                    eventInfo.RemoveEventHandler(control, handler);
             }
         }
     }

@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace ReflectionTester
 {
+    public delegate void TestDelegate(string a, int b);
+
     public class First
     {
         private int first_a = 16101975;
@@ -17,7 +19,6 @@ namespace ReflectionTester
             set { first_a = value; }
         }
 
-        public delegate void TestDelegate(string a, int b);
         public event TestDelegate OnTestDelegate;
 
         private string Method1(string a, int b)
